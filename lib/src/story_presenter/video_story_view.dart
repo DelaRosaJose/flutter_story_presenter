@@ -10,8 +10,7 @@ import '../utils/video_utils.dart';
 /// (network, file, asset) and optional thumbnail and error widgets.
 ///
 
-typedef OnVisibilityChanged = void Function(
-    VideoPlayerController? videoPlayer, bool isvisible);
+typedef OnVisibilityChanged = void Function(VideoPlayerController? videoPlayer, bool isvisible);
 
 class VideoStoryView extends StatefulWidget {
   /// Creates a [VideoStoryView] widget.
@@ -38,12 +37,13 @@ class VideoStoryView extends StatefulWidget {
 class _VideoStoryViewState extends State<VideoStoryView> {
   VideoPlayerController? controller;
   VideoStatus videoStatus = VideoStatus.loading;
+  bool _isDisposed = false;
 
   @override
   void initState() {
     super.initState();
     _initialiseVideoPlayer().then((_) {
-      if (videoStatus.isLive) {
+      if (!_isDisposed && videoStatus.isLive) {
         controller?.addListener(videoListener);
       }
     });
@@ -73,7 +73,17 @@ class _VideoStoryViewState extends State<VideoStoryView> {
           videoPlayerOptions: storyItem.videoConfig?.videoPlayerOptions,
         );
       }
+      if (_isDisposed) {
+        controller?.dispose();
+        controller = null;
+        return;
+      }
       await controller?.initialize();
+      if (_isDisposed) {
+        controller?.dispose();
+        controller = null;
+        return;
+      }
       videoStatus = VideoStatus.live;
       if (controller != null) {
         widget.onVisibilityChanged?.call(controller!, false);
@@ -99,17 +109,14 @@ class _VideoStoryViewState extends State<VideoStoryView> {
 
   BoxFit get fit => config.fit ?? BoxFit.cover;
 
-  StoryViewVideoConfig get config =>
-      widget.storyItem.videoConfig ?? const StoryViewVideoConfig();
+  StoryViewVideoConfig get config => widget.storyItem.videoConfig ?? const StoryViewVideoConfig();
 
   @override
   void dispose() {
-    if (videoStatus.isLive) {
-      controller?.removeListener(videoListener);
-      controller?.dispose();
-      controller = null;
-    }
-
+    _isDisposed = true;
+    controller?.removeListener(videoListener);
+    controller?.dispose();
+    controller = null;
     super.dispose();
   }
 
@@ -125,8 +132,7 @@ class _VideoStoryViewState extends State<VideoStoryView> {
         }
       },
       child: Stack(
-        alignment:
-            (fit == BoxFit.cover) ? Alignment.topCenter : Alignment.center,
+        alignment: (fit == BoxFit.cover) ? Alignment.topCenter : Alignment.center,
         fit: (fit == BoxFit.cover) ? StackFit.expand : StackFit.loose,
         children: [
           if (config.loadingWidget != null) ...{

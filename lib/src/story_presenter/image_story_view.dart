@@ -63,16 +63,15 @@ class _ImageStoryViewState extends State<ImageStoryView> {
           return const SizedBox.shrink();
         },
         loadingBuilder: (context, child, loadingProgress) {
-          // Workaround for AssetImage loading issues.
-          if (((child as Semantics).child as RawImage).image != null) {
+          if (loadingProgress == null) {
             markImageAsLoaded();
             return child;
           }
           final w = imageConfig?.progressIndicatorBuilder?.call(
               context,
               '',
-              DownloadProgress('', loadingProgress?.expectedTotalBytes ?? 0,
-                  loadingProgress?.cumulativeBytesLoaded ?? 0));
+              DownloadProgress('', loadingProgress.expectedTotalBytes ?? 0,
+                  loadingProgress.cumulativeBytesLoaded));
           return w ?? const SizedBox.shrink();
         },
       );
@@ -93,43 +92,42 @@ class _ImageStoryViewState extends State<ImageStoryView> {
           return const SizedBox.shrink();
         },
         loadingBuilder: (context, child, loadingProgress) {
-          // Check if the image has loaded and call the callback if necessary.
-          if (((child as Semantics).child as RawImage).image != null) {
+          if (loadingProgress == null) {
             markImageAsLoaded();
             return child;
           }
           final w = imageConfig?.progressIndicatorBuilder?.call(
               context,
               '',
-              DownloadProgress('', loadingProgress?.expectedTotalBytes ?? 0,
-                  loadingProgress?.cumulativeBytesLoaded ?? 0));
+              DownloadProgress('', loadingProgress.expectedTotalBytes ?? 0,
+                  loadingProgress.cumulativeBytesLoaded));
           return w ?? const SizedBox.shrink();
         },
       );
+    } else {
+      /// If the image source is a network URL, use [CachedNetworkImage].
+      child = CachedNetworkImage(
+        imageUrl: widget.storyItem.url!,
+        imageBuilder: (context, imageProvider) {
+          // Mark the image as loaded once it is built.
+          markImageAsLoaded();
+          return Image(
+            image: imageProvider,
+            height: imageConfig?.height,
+            fit: imageConfig?.fit,
+            width: imageConfig?.width,
+          );
+        },
+        errorWidget: (context, error, obj) {
+          // Display error widget if provided, otherwise show an empty widget.
+          if (widget.storyItem.errorWidget != null) {
+            return widget.storyItem.errorWidget!;
+          }
+          return const SizedBox.shrink();
+        },
+        progressIndicatorBuilder: imageConfig?.progressIndicatorBuilder,
+      );
     }
-
-    /// If the image source is a network URL, use [CachedNetworkImage].
-    child = CachedNetworkImage(
-      imageUrl: widget.storyItem.url!,
-      imageBuilder: (context, imageProvider) {
-        // Mark the image as loaded once it is built.
-        markImageAsLoaded();
-        return Image(
-          image: imageProvider,
-          height: imageConfig?.height,
-          fit: imageConfig?.fit,
-          width: imageConfig?.width,
-        );
-      },
-      errorWidget: (context, error, obj) {
-        // Display error widget if provided, otherwise show an empty widget.
-        if (widget.storyItem.errorWidget != null) {
-          return widget.storyItem.errorWidget!;
-        }
-        return const SizedBox.shrink();
-      },
-      progressIndicatorBuilder: imageConfig?.progressIndicatorBuilder,
-    );
 
     return VisibilityDetector(
       key: UniqueKey(),
