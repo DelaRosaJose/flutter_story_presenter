@@ -317,8 +317,9 @@ class _StoryPresenterState extends State<StoryPresenter>
       physics: const NeverScrollableScrollPhysics(),
       onPageChanged: (index) {
         _resetAnimation();
-        _currentVideoPlayer?.pause();
-        _currentVideoPlayer?.seekTo(Duration.zero);
+        // Don't call pause/seekTo here — the old VideoStoryView
+        // will dispose its own controller. Calling seekTo on a
+        // disposed controller causes an async exception.
         _currentVideoPlayer = null;
 
         widget.onStoryChanged?.call(index);
@@ -382,8 +383,10 @@ class _StoryPresenterState extends State<StoryPresenter>
                 }
               } else {
                 _currentVideoPlayer = null;
-                videoPlayer?.pause();
-                videoPlayer?.seekTo(Duration.zero);
+                // Use .catchError to handle async exceptions from
+                // already-disposed controllers (seekTo is async).
+                videoPlayer?.pause().catchError((_) {});
+                videoPlayer?.seekTo(Duration.zero).catchError((_) {});
               }
             } else {
               _currentVideoPlayer = null;
@@ -422,8 +425,7 @@ class _StoryPresenterState extends State<StoryPresenter>
           isAutoStart: true,
           key: UniqueKey(),
           builder: () {
-            return item.customWidget!(widget.storyController) ??
-                const SizedBox.shrink();
+            return item.customWidget!(widget.storyController) ?? const SizedBox.shrink();
           },
           storyItem: item,
           onVisibilityChanged: (isVisible) {
@@ -461,8 +463,7 @@ class _StoryPresenterState extends State<StoryPresenter>
     return widget.indicatorWrapper?.call(child) ?? child;
   }
 
-  Widget _buildGestureAndContents(
-      BuildContext context, int index, StoryItem item) {
+  Widget _buildGestureAndContents(BuildContext context, int index, StoryItem item) {
     final width = MediaQuery.sizeOf(context).width;
     double dragStartY = 0.0;
     const double dragThreshold = 100.0;

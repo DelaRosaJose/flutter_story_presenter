@@ -125,6 +125,7 @@ class _VideoStoryViewState extends State<VideoStoryView> {
     return VisibilityDetector(
       key: UniqueKey(),
       onVisibilityChanged: (info) {
+        if (_isDisposed) return;
         if (info.visibleFraction == 1) {
           widget.onVisibilityChanged?.call(controller, true);
         } else if (info.visibleFraction == 0) {
