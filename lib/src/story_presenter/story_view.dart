@@ -334,6 +334,7 @@ class _StoryPresenterState extends State<StoryPresenter>
     return PageView.builder(
       controller: pageController,
       allowImplicitScrolling: true,
+      scrollDirection: Axis.vertical,
       physics: const NeverScrollableScrollPhysics(),
       onPageChanged: (index) {
         _hasStartedCountdown = false;
@@ -508,8 +509,6 @@ class _StoryPresenterState extends State<StoryPresenter>
 
   Widget _buildGestureAndContents(BuildContext context, int index, StoryItem item) {
     final width = MediaQuery.sizeOf(context).width;
-    double dragStartY = 0.0;
-    const double dragThreshold = 100.0;
 
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
@@ -536,6 +535,7 @@ class _StoryPresenterState extends State<StoryPresenter>
         if (!willUserHandle) _storyController.play();
       },
 
+      /*
       onVerticalDragStart: (details) {
         dragStartY = details.globalPosition.dy;
       },
@@ -545,6 +545,7 @@ class _StoryPresenterState extends State<StoryPresenter>
           widget.onSlideDown?.call();
         }
       },
+      */
 
       //! content goes here
       child: _buildContent(context, index, item),
