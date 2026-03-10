@@ -144,6 +144,9 @@ class _StoryPresenterState extends State<StoryPresenter>
   late final StoryController _storyController;
   late final PageController pageController;
 
+  bool _hasStartedCountdown = false;
+  bool _isAnimationStatusListenerAdded = false;
+
   @override
   void initState() {
     super.initState();
@@ -289,17 +292,34 @@ class _StoryPresenterState extends State<StoryPresenter>
   /// Resets the animation controller and its listeners.
   void _resetAnimation() {
     _animationController.reset();
-    _animationController.removeStatusListener(animationStatusListener);
+    if (_isAnimationStatusListenerAdded) {
+      _animationController.removeStatusListener(animationStatusListener);
+      _isAnimationStatusListenerAdded = false;
+    }
   }
 
-  /// Starts the countdown for the story item duration.
-  void _startStoryCountdown(Duration duration) {
-    _resetAnimation();
+  /// Starts/resumes the countdown for the story item duration.
+  ///
+  /// If [reset] is false, this will not reset the animation controller and will
+  /// instead continue from its current value.
+  void _startStoryCountdown(Duration duration, {bool reset = true}) {
+    if (reset) {
+      _resetAnimation();
+    }
 
     durationNotifier.value = duration;
     _animationController.duration = duration;
-    _animationController.addStatusListener(animationStatusListener);
-    _forwardAnimation();
+
+    if (!_isAnimationStatusListenerAdded) {
+      _animationController.addStatusListener(animationStatusListener);
+      _isAnimationStatusListenerAdded = true;
+    }
+
+    if (reset) {
+      _forwardAnimation();
+    } else {
+      _forwardAnimation(from: _animationController.value);
+    }
   }
 
   /// Listener for the animation status.
@@ -316,6 +336,7 @@ class _StoryPresenterState extends State<StoryPresenter>
       allowImplicitScrolling: true,
       physics: const NeverScrollableScrollPhysics(),
       onPageChanged: (index) {
+        _hasStartedCountdown = false;
         _resetAnimation();
         // Don't call pause/seekTo here — the old VideoStoryView
         // will dispose its own controller. Calling seekTo on a
@@ -359,11 +380,16 @@ class _StoryPresenterState extends State<StoryPresenter>
     switch (item.storyItemType) {
       case StoryItemType.image:
         return ImageStoryView(
-          key: UniqueKey(),
+          key: ValueKey(item.url ?? index.toString()),
           storyItem: item,
-          onVisibilityChanged: (isVisible, isLoaded) {
-            if (isVisible && isLoaded) {
-              _startStoryCountdown(item.duration);
+          onVisibilityChanged: (isVisible, isLoaded, isInitial) {
+            if (isVisible && isLoaded && _storyController.storyStatus != StoryAction.pause) {
+              if (!_hasStartedCountdown) {
+                _startStoryCountdown(item.duration, reset: true);
+                _hasStartedCountdown = true;
+              } else {
+                _startStoryCountdown(item.duration, reset: false);
+              }
             }
           },
         );
@@ -371,22 +397,29 @@ class _StoryPresenterState extends State<StoryPresenter>
       case StoryItemType.video:
         return VideoStoryView(
           storyItem: item,
-          key: UniqueKey(),
+          key: ValueKey(item.url ?? index.toString()),
           looping: false,
-          onVisibilityChanged: (videoPlayer, isvisible) async {
+          onVisibilityChanged: (videoPlayer, isvisible, isInitial) async {
             if (videoPlayer?.value.isInitialized == true) {
               if (isvisible) {
                 _currentVideoPlayer = videoPlayer;
                 if (_storyController.storyStatus != StoryAction.pause) {
                   await videoPlayer!.play();
-                  _startStoryCountdown(videoPlayer.value.duration);
+                  if (!_hasStartedCountdown) {
+                    _startStoryCountdown(videoPlayer.value.duration, reset: true);
+                    _hasStartedCountdown = true;
+                  } else {
+                    _startStoryCountdown(videoPlayer.value.duration, reset: false);
+                  }
                 }
               } else {
                 _currentVideoPlayer = null;
                 // Use .catchError to handle async exceptions from
                 // already-disposed controllers (seekTo is async).
-                videoPlayer?.pause().catchError((_) {});
-                videoPlayer?.seekTo(Duration.zero).catchError((_) {});
+                if (_storyController.storyStatus != StoryAction.play) {
+                  videoPlayer?.pause().catchError((_) {});
+                  videoPlayer?.seekTo(Duration.zero).catchError((_) {});
+                }
               }
             } else {
               _currentVideoPlayer = null;
@@ -397,10 +430,15 @@ class _StoryPresenterState extends State<StoryPresenter>
       case StoryItemType.text:
         return TextStoryView(
           storyItem: item,
-          key: UniqueKey(),
-          onVisibilityChanged: (isLoaded, isVisible) {
-            if (isLoaded && isVisible) {
-              _startStoryCountdown(item.duration);
+          key: ValueKey(item.url ?? index.toString()),
+          onVisibilityChanged: (isLoaded, isVisible, isInitial) {
+            if (isLoaded && isVisible && _storyController.storyStatus != StoryAction.pause) {
+              if (!_hasStartedCountdown) {
+                _startStoryCountdown(item.duration, reset: true);
+                _hasStartedCountdown = true;
+              } else {
+                _startStoryCountdown(item.duration, reset: false);
+              }
             }
           },
         );
@@ -423,14 +461,19 @@ class _StoryPresenterState extends State<StoryPresenter>
       case StoryItemType.custom:
         return StoryCustomWidgetWrapper(
           isAutoStart: true,
-          key: UniqueKey(),
+          key: ValueKey(item.url ?? index.toString()),
           builder: () {
             return item.customWidget!(widget.storyController) ?? const SizedBox.shrink();
           },
           storyItem: item,
           onVisibilityChanged: (isVisible) {
             if (isVisible) {
-              _startStoryCountdown(item.duration);
+              if (!_hasStartedCountdown) {
+                _startStoryCountdown(item.duration, reset: true);
+                _hasStartedCountdown = true;
+              } else {
+                _startStoryCountdown(item.duration, reset: false);
+              }
             }
           },
         );

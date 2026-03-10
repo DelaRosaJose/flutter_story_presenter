@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_story_presenter/flutter_story_presenter.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
-typedef OnImageVisibilityChanged = void Function(bool isVisible, bool isLoaded);
+typedef OnImageVisibilityChanged = void Function(bool isVisible, bool isLoaded, bool isInitial);
 
 /// A widget that displays an image from various sources (asset, file, network) in a story view.
 /// Notifies when the image is loaded via the [onImageLoaded] callback.
@@ -28,6 +28,13 @@ class _ImageStoryViewState extends State<ImageStoryView> {
   /// A flag to ensure the [widget.onImageLoaded] callback is called only once.
   bool _isImageLoaded = false;
   bool _isVisible = false;
+  bool _hasNotifiedInitialVisibility = false;
+
+  void _notifyVisibilityChanged() {
+    final isInitial = !_hasNotifiedInitialVisibility;
+    _hasNotifiedInitialVisibility = true;
+    widget.onVisibilityChanged?.call(_isVisible, _isImageLoaded, isInitial);
+  }
 
   /// Marks the image as loaded and calls the [widget.onImageLoaded] callback if it hasn't been called already.
   void markImageAsLoaded() {
@@ -36,7 +43,7 @@ class _ImageStoryViewState extends State<ImageStoryView> {
       Future.delayed(
         Duration.zero,
         () {
-          widget.onVisibilityChanged?.call(_isVisible, _isImageLoaded);
+          _notifyVisibilityChanged();
         },
       );
     }
@@ -130,14 +137,14 @@ class _ImageStoryViewState extends State<ImageStoryView> {
     }
 
     return VisibilityDetector(
-      key: UniqueKey(),
+      key: ValueKey(widget.storyItem.url ?? widget.storyItem.hashCode.toString()),
       onVisibilityChanged: (info) {
         if (info.visibleFraction == 0) {
           _isVisible = false;
-          widget.onVisibilityChanged?.call(false, _isImageLoaded);
+          _notifyVisibilityChanged();
         } else if (info.visibleFraction == 1) {
           _isVisible = true;
-          widget.onVisibilityChanged?.call(true, _isImageLoaded);
+          _notifyVisibilityChanged();
         }
       },
       child: child,

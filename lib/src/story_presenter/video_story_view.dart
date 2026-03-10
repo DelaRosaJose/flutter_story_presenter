@@ -10,7 +10,7 @@ import '../utils/video_utils.dart';
 /// (network, file, asset) and optional thumbnail and error widgets.
 ///
 
-typedef OnVisibilityChanged = void Function(VideoPlayerController? videoPlayer, bool isvisible);
+typedef OnVisibilityChanged = void Function(VideoPlayerController? videoPlayer, bool isVisible, bool isInitial);
 
 class VideoStoryView extends StatefulWidget {
   /// Creates a [VideoStoryView] widget.
@@ -38,6 +38,7 @@ class _VideoStoryViewState extends State<VideoStoryView> {
   VideoPlayerController? controller;
   VideoStatus videoStatus = VideoStatus.loading;
   bool _isDisposed = false;
+  bool _hasNotifiedInitialVisibility = false;
 
   @override
   void initState() {
@@ -86,7 +87,7 @@ class _VideoStoryViewState extends State<VideoStoryView> {
       }
       videoStatus = VideoStatus.live;
       if (controller != null) {
-        widget.onVisibilityChanged?.call(controller!, false);
+        _notifyVisibilityChanged(controller, false);
       }
       await controller?.setLooping(widget.looping ?? false);
       await controller?.setVolume(storyItem.isMuteByDefault ? 0 : 1);
@@ -97,6 +98,12 @@ class _VideoStoryViewState extends State<VideoStoryView> {
     if (mounted) {
       setState(() {});
     }
+  }
+
+  void _notifyVisibilityChanged(VideoPlayerController? controller, bool isVisible) {
+    final isInitial = !_hasNotifiedInitialVisibility;
+    _hasNotifiedInitialVisibility = true;
+    widget.onVisibilityChanged?.call(controller, isVisible, isInitial);
   }
 
   void videoListener() {
@@ -123,13 +130,13 @@ class _VideoStoryViewState extends State<VideoStoryView> {
   @override
   Widget build(BuildContext context) {
     return VisibilityDetector(
-      key: UniqueKey(),
+      key: ValueKey(widget.storyItem.url ?? widget.storyItem.hashCode.toString()),
       onVisibilityChanged: (info) {
         if (_isDisposed) return;
         if (info.visibleFraction == 1) {
-          widget.onVisibilityChanged?.call(controller, true);
+          _notifyVisibilityChanged(controller, true);
         } else if (info.visibleFraction == 0) {
-          widget.onVisibilityChanged?.call(controller, false);
+          _notifyVisibilityChanged(controller, false);
         }
       },
       child: Stack(

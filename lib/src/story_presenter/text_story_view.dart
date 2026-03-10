@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_story_presenter/flutter_story_presenter.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
-typedef OnTextStoryLoaded = void Function(bool isLoaded, bool isVisible);
+typedef OnTextStoryLoaded = void Function(bool isLoaded, bool isVisible, bool isInitial);
 
 class TextStoryView extends StatefulWidget {
   const TextStoryView({
@@ -19,10 +19,18 @@ class TextStoryView extends StatefulWidget {
 }
 
 class _TextStoryViewState extends State<TextStoryView> {
+  bool _hasNotifiedInitialVisibility = false;
+
+  void _notifyVisibilityChanged({required bool isLoaded, required bool isVisible}) {
+    final isInitial = !_hasNotifiedInitialVisibility;
+    _hasNotifiedInitialVisibility = true;
+    widget.onVisibilityChanged?.call(isLoaded, isVisible, isInitial);
+  }
+
   @override
   void initState() {
     super.initState();
-    widget.onVisibilityChanged?.call(true, false);
+    _notifyVisibilityChanged(isLoaded: true, isVisible: false);
   }
 
   @override
@@ -30,12 +38,12 @@ class _TextStoryViewState extends State<TextStoryView> {
     final storyItem = widget.storyItem;
 
     return VisibilityDetector(
-      key: UniqueKey(),
+      key: ValueKey(widget.storyItem.url ?? widget.storyItem.hashCode.toString()),
       onVisibilityChanged: (info) {
         if (info.visibleFraction == 0) {
-          widget.onVisibilityChanged?.call(true, false);
+          _notifyVisibilityChanged(isLoaded: true, isVisible: false);
         } else if (info.visibleFraction == 1) {
-          widget.onVisibilityChanged?.call(true, true);
+          _notifyVisibilityChanged(isLoaded: true, isVisible: true);
         }
       },
       child: Container(
