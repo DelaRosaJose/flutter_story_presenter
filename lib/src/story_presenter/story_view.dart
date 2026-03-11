@@ -157,6 +157,10 @@ class _StoryPresenterState extends State<StoryPresenter>
       vsync: this,
     );
 
+    _animationController.addListener(() {
+      _storyController.sinkPlaybackProgress(_animationController.value);
+    });
+
     pageController = PageController(
       initialPage: _storyController.page,
       keepPage: false,

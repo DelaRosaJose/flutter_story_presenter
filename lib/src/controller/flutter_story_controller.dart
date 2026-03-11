@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../utils/story_utils.dart';
@@ -11,6 +12,24 @@ class StoryController extends ChangeNotifier {
 
   /// The current action status of the story. Defaults to playing.
   StoryAction get storyStatus => _storyStatus;
+
+  /// Stream emitting the current playback progress (0.0 to 1.0)
+  final StreamController<double> _playbackNotifier = StreamController<double>.broadcast();
+  Stream<double> get playbackNotifier => _playbackNotifier.stream;
+
+  /// Internal method used by StoryPresenter to emit progress
+  void sinkPlaybackProgress(double progress) {
+    if (!_playbackNotifier.isClosed) {
+      _playbackNotifier.sink.add(progress);
+    }
+  }
+
+  /// Disposes the stream
+  @override
+  void dispose() {
+    _playbackNotifier.close();
+    super.dispose();
+  }
 
   set _setStatus(StoryAction status) {
     _storyStatus = status;
