@@ -251,15 +251,10 @@ class _StoryPresenterState extends State<StoryPresenter>
       }
     }
 
-    /// Toggles mute/unmute for the media.
-    void toggleMuteUnMuteMedia() {
+    /// Mutes or unMutes the media explicitly.
+    void setMuteMedia(bool mute) {
       if (_currentVideoPlayer != null) {
-        final videoPlayerValue = _currentVideoPlayer!.value;
-        if (videoPlayerValue.volume == 1) {
-          _currentVideoPlayer!.setVolume(0);
-        } else {
-          _currentVideoPlayer!.setVolume(1);
-        }
+        _currentVideoPlayer!.setVolume(mute ? 0 : 1);
       }
     }
 
@@ -283,8 +278,10 @@ class _StoryPresenterState extends State<StoryPresenter>
         break;
 
       case StoryAction.mute:
+        setMuteMedia(true);
+        break;
       case StoryAction.unMute:
-        toggleMuteUnMuteMedia();
+        setMuteMedia(false);
         break;
     }
   }
