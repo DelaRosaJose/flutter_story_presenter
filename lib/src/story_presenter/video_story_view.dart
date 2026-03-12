@@ -28,7 +28,7 @@ class VideoStoryView extends StatefulWidget {
   /// In case of single video story
   final bool? looping;
   final OnVisibilityChanged? onVisibilityChanged;
-  final VoidCallback? onEnd;
+  final VoidCallback? onEnd;  
 
   @override
   State<VideoStoryView> createState() => _VideoStoryViewState();
@@ -39,6 +39,8 @@ class _VideoStoryViewState extends State<VideoStoryView> {
   VideoStatus videoStatus = VideoStatus.loading;
   bool _isDisposed = false;
   bool _hasNotifiedInitialVisibility = false;
+// 1. AÑADIMOS ESTA VARIABLE PARA RASTREAR LA VISIBILIDAD REAL
+  bool _isVisible = false;
 
   @override
   void initState() {
@@ -86,9 +88,11 @@ class _VideoStoryViewState extends State<VideoStoryView> {
         return;
       }
       videoStatus = VideoStatus.live;
+
       if (controller != null) {
-        _notifyVisibilityChanged(controller, false);
+        _notifyVisibilityChanged(controller, _isVisible);
       }
+
       await controller?.setLooping(widget.looping ?? false);
       await controller?.setVolume(storyItem.isMuteByDefault ? 0 : 1);
     } catch (e) {
@@ -133,10 +137,9 @@ class _VideoStoryViewState extends State<VideoStoryView> {
       key: ValueKey(widget.storyItem.url ?? widget.storyItem.hashCode.toString()),
       onVisibilityChanged: (info) {
         if (_isDisposed) return;
-        if (info.visibleFraction == 1) {
-          _notifyVisibilityChanged(controller, true);
-        } else if (info.visibleFraction == 0) {
-          _notifyVisibilityChanged(controller, false);
+        _isVisible = info.visibleFraction == 1;
+        if (controller?.value.isInitialized == true) {
+           _notifyVisibilityChanged(controller, _isVisible);
         }
       },
       child: Stack(

@@ -304,10 +304,6 @@ class _StoryPresenterState extends State<StoryPresenter>
   /// If [reset] is false, this will not reset the animation controller and will
   /// instead continue from its current value.
   void _startStoryCountdown(Duration duration, {bool reset = true}) {
-    if (reset) {
-      _resetAnimation();
-    }
-
     durationNotifier.value = duration;
     _animationController.duration = duration;
 
@@ -317,6 +313,7 @@ class _StoryPresenterState extends State<StoryPresenter>
     }
 
     if (reset) {
+      _animationController.reset();
       _forwardAnimation();
     } else {
       _forwardAnimation(from: _animationController.value);
@@ -469,7 +466,7 @@ class _StoryPresenterState extends State<StoryPresenter>
           },
           storyItem: item,
           onVisibilityChanged: (isVisible) {
-            if (isVisible) {
+            if (isVisible && _storyController.storyStatus != StoryAction.pause) {
               if (!_hasStartedCountdown) {
                 _startStoryCountdown(item.duration, reset: true);
                 _hasStartedCountdown = true;
