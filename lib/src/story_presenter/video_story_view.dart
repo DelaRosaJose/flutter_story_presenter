@@ -94,7 +94,7 @@ class _VideoStoryViewState extends State<VideoStoryView> {
       await controller?.setVolume(storyItem.isMuteByDefault ? 0 : 1);
 
       if (controller != null) {
-        _notifyVisibilityChanged(controller, true); 
+        _notifyVisibilityChanged(controller, _isVisible); 
       }
 
     } catch (e) {
@@ -139,7 +139,8 @@ class _VideoStoryViewState extends State<VideoStoryView> {
       key: ValueKey(widget.storyItem.url ?? widget.storyItem.hashCode.toString()),
       onVisibilityChanged: (info) {
         if (_isDisposed) return;
-        _isVisible = info.visibleFraction == 1;
+        _isVisible = info.visibleFraction > 0.95;
+
         if (controller?.value.isInitialized == true) {
           _notifyVisibilityChanged(controller, _isVisible);
         }
