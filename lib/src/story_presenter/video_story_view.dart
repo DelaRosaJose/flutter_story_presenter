@@ -112,7 +112,6 @@ class _VideoStoryViewState extends State<VideoStoryView> {
   }
 
   void videoListener() async {
-    await controller?.play();
     final pos = controller?.value.position ?? Duration.zero;
     final dur = controller?.value.duration ?? Duration.zero;
     if (pos >= dur) {
