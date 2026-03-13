@@ -90,12 +90,13 @@ class _VideoStoryViewState extends State<VideoStoryView> {
       }
       videoStatus = VideoStatus.live;
 
-      if (controller != null) {
-        _notifyVisibilityChanged(controller, _isVisible);
-      }
-
       await controller?.setLooping(widget.looping ?? false);
       await controller?.setVolume(storyItem.isMuteByDefault ? 0 : 1);
+
+      if (controller != null) {
+        _notifyVisibilityChanged(controller, true); 
+      }
+
     } catch (e) {
       videoStatus = VideoStatus.error;
       debugPrint('$e');
