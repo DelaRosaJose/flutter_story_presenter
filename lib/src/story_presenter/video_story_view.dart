@@ -10,7 +10,8 @@ import '../utils/video_utils.dart';
 /// (network, file, asset) and optional thumbnail and error widgets.
 ///
 
-typedef OnVisibilityChanged = void Function(VideoPlayerController? videoPlayer, bool isVisible, bool isInitial);
+typedef OnVisibilityChanged = void Function(
+    VideoPlayerController? videoPlayer, bool isVisible, bool isInitial);
 
 class VideoStoryView extends StatefulWidget {
   /// Creates a [VideoStoryView] widget.
@@ -28,7 +29,7 @@ class VideoStoryView extends StatefulWidget {
   /// In case of single video story
   final bool? looping;
   final OnVisibilityChanged? onVisibilityChanged;
-  final VoidCallback? onEnd;  
+  final VoidCallback? onEnd;
 
   @override
   State<VideoStoryView> createState() => _VideoStoryViewState();
@@ -110,7 +111,8 @@ class _VideoStoryViewState extends State<VideoStoryView> {
     widget.onVisibilityChanged?.call(controller, isVisible, isInitial);
   }
 
-  void videoListener() {
+  void videoListener() async {
+    await controller?.play();
     final pos = controller?.value.position ?? Duration.zero;
     final dur = controller?.value.duration ?? Duration.zero;
     if (pos >= dur) {
@@ -139,7 +141,7 @@ class _VideoStoryViewState extends State<VideoStoryView> {
         if (_isDisposed) return;
         _isVisible = info.visibleFraction == 1;
         if (controller?.value.isInitialized == true) {
-           _notifyVisibilityChanged(controller, _isVisible);
+          _notifyVisibilityChanged(controller, _isVisible);
         }
       },
       child: Stack(
