@@ -136,7 +136,7 @@ class _VideoStoryViewState extends State<VideoStoryView> {
   @override
   Widget build(BuildContext context) {
     return VisibilityDetector(
-      key: ValueKey(widget.storyItem.url ?? widget.storyItem.hashCode.toString()),
+      key: widget.key ?? UniqueKey(),
       onVisibilityChanged: (info) {
         if (_isDisposed) return;
         _isVisible = info.visibleFraction > 0.95;

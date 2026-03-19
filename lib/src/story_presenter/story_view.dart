@@ -42,8 +42,6 @@ typedef IndicatorWrapper = Widget Function(Widget child);
 typedef CommonBuilder = Widget Function(BuildContext context, int index);
 typedef StoryBuilder = StoryItem Function(BuildContext context, int index);
 
-final durationNotifier = ValueNotifier(const Duration(seconds: 5));
-
 class StoryPresenter extends StatefulWidget {
   const StoryPresenter({
     this.storyController,
@@ -146,6 +144,7 @@ class _StoryPresenterState extends State<StoryPresenter>
 
   bool _hasStartedCountdown = false;
   bool _isAnimationStatusListenerAdded = false;
+  late final ValueNotifier<Duration> _durationNotifier = ValueNotifier(const Duration(seconds: 5));
 
   @override
   void initState() {
@@ -201,6 +200,7 @@ class _StoryPresenterState extends State<StoryPresenter>
     _animationController.dispose();
 
     WidgetsBinding.instance.removeObserver(this);
+    _durationNotifier.dispose();
     super.dispose();
   }
 
@@ -242,6 +242,7 @@ class _StoryPresenterState extends State<StoryPresenter>
       } else {
         _storyController.page += 1;
         pageController.jumpToPage(_storyController.page);
+        Future.microtask(() => _storyController.play());
       }
     }
 
@@ -252,6 +253,7 @@ class _StoryPresenterState extends State<StoryPresenter>
       } else {
         _storyController.page -= 1;
         pageController.jumpToPage(_storyController.page);
+        Future.microtask(() => _storyController.play());
       }
     }
 
@@ -304,7 +306,7 @@ class _StoryPresenterState extends State<StoryPresenter>
   /// If [reset] is false, this will not reset the animation controller and will
   /// instead continue from its current value.
   void _startStoryCountdown(Duration duration, {bool reset = true}) {
-    durationNotifier.value = duration;
+    _durationNotifier.value = duration;
     _animationController.duration = duration;
 
     if (!_isAnimationStatusListenerAdded) {
@@ -379,7 +381,7 @@ class _StoryPresenterState extends State<StoryPresenter>
     switch (item.storyItemType) {
       case StoryItemType.image:
         return ImageStoryView(
-          key: ValueKey(item.url ?? index.toString()),
+          key: ValueKey('${item.hashCode}_${item.url}_$index'),
           storyItem: item,
           onVisibilityChanged: (isVisible, isLoaded, isInitial) {
             if (isVisible && isLoaded && _storyController.storyStatus != StoryAction.pause) {
@@ -396,7 +398,7 @@ class _StoryPresenterState extends State<StoryPresenter>
       case StoryItemType.video:
         return VideoStoryView(
           storyItem: item,
-          key: ValueKey(item.url ?? index.toString()),
+          key: ValueKey('${item.hashCode}_${item.url}_$index'),
           looping: false,
           onVisibilityChanged: (videoPlayer, isvisible, isInitial) async {
             if (videoPlayer?.value.isInitialized == true) {
@@ -429,13 +431,16 @@ class _StoryPresenterState extends State<StoryPresenter>
       case StoryItemType.text:
         return TextStoryView(
           storyItem: item,
-          key: ValueKey(item.url ?? index.toString()),
+          key: ValueKey('${item.hashCode}_${item.url}_$index'),
           onVisibilityChanged: (isLoaded, isVisible, isInitial) {
+            debugPrint('StoryPresenter[Text_$index]: isLoaded=$isLoaded, isVisible=$isVisible, status=${_storyController.storyStatus}, hasStarted=$_hasStartedCountdown');
             if (isLoaded && isVisible && _storyController.storyStatus != StoryAction.pause) {
               if (!_hasStartedCountdown) {
+                debugPrint('StoryPresenter[Text_$index]: Starting countdown (reset: true), duration: ${item.duration}');
                 _startStoryCountdown(item.duration, reset: true);
                 _hasStartedCountdown = true;
               } else {
+                debugPrint('StoryPresenter[Text_$index]: Starting countdown (reset: false)');
                 _startStoryCountdown(item.duration, reset: false);
               }
             }
@@ -460,7 +465,7 @@ class _StoryPresenterState extends State<StoryPresenter>
       case StoryItemType.custom:
         return StoryCustomWidgetWrapper(
           isAutoStart: true,
-          key: ValueKey(item.url ?? index.toString()),
+          key: ValueKey('${item.hashCode}_${item.url}_$index'),
           builder: () {
             return item.customWidget!(widget.storyController) ?? const SizedBox.shrink();
           },
@@ -481,7 +486,7 @@ class _StoryPresenterState extends State<StoryPresenter>
 
   Widget _buildProgressBar(BuildContext context, int index, StoryItem item) {
     final child = ValueListenableBuilder(
-        valueListenable: durationNotifier,
+        valueListenable: _durationNotifier,
         builder: (context, duration, child) {
           return Align(
             alignment: storyViewIndicatorConfig.alignment,

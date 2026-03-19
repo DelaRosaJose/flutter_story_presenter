@@ -137,13 +137,11 @@ class _ImageStoryViewState extends State<ImageStoryView> {
     }
 
     return VisibilityDetector(
-      key: ValueKey(widget.storyItem.url ?? widget.storyItem.hashCode.toString()),
+      key: widget.key ?? UniqueKey(),
       onVisibilityChanged: (info) {
-        if (info.visibleFraction == 0) {
-          _isVisible = false;
-          _notifyVisibilityChanged();
-        } else if (info.visibleFraction == 1) {
-          _isVisible = true;
+        final newVisible = info.visibleFraction > 0.95;
+        if (_isVisible != newVisible) {
+          _isVisible = newVisible;
           _notifyVisibilityChanged();
         }
       },

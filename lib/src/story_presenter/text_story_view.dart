@@ -20,6 +20,7 @@ class TextStoryView extends StatefulWidget {
 
 class _TextStoryViewState extends State<TextStoryView> {
   bool _hasNotifiedInitialVisibility = false;
+  bool _isVisible = false;
 
   void _notifyVisibilityChanged({required bool isLoaded, required bool isVisible}) {
     final isInitial = !_hasNotifiedInitialVisibility;
@@ -38,12 +39,16 @@ class _TextStoryViewState extends State<TextStoryView> {
     final storyItem = widget.storyItem;
 
     return VisibilityDetector(
-      key: ValueKey(widget.storyItem.url ?? widget.storyItem.hashCode.toString()),
+      key: widget.key ?? UniqueKey(),
       onVisibilityChanged: (info) {
-        if (info.visibleFraction == 0) {
-          _notifyVisibilityChanged(isLoaded: true, isVisible: false);
-        } else if (info.visibleFraction == 1) {
-          _notifyVisibilityChanged(isLoaded: true, isVisible: true);
+        final newVisible = info.visibleFraction > 0.95;
+        if (_isVisible != newVisible) {
+          _isVisible = newVisible;
+          if (_isVisible) {
+             _notifyVisibilityChanged(isLoaded: true, isVisible: true);
+          } else {
+             _notifyVisibilityChanged(isLoaded: true, isVisible: false);
+          }
         }
       },
       child: Container(
