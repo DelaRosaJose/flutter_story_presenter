@@ -62,6 +62,7 @@ class StoryPresenter extends StatefulWidget {
     this.indicatorWrapper,
     this.onLongPress,
     this.onLongPressRelease,
+    this.isVisible = true,
     super.key,
   });
 
@@ -130,6 +131,8 @@ class StoryPresenter extends StatefulWidget {
 
   final VoidCallback? onLongPressRelease;
 
+  final bool isVisible;
+
   @override
   State<StoryPresenter> createState() => _StoryPresenterState();
 }
@@ -151,6 +154,10 @@ class _StoryPresenterState extends State<StoryPresenter>
     super.initState();
 
     _initStoryController();
+
+    if (!widget.isVisible) {
+      _storyController.pause();
+    }
 
     _animationController = AnimationController(
       vsync: this,
@@ -204,6 +211,18 @@ class _StoryPresenterState extends State<StoryPresenter>
     super.dispose();
   }
 
+  @override
+  void didUpdateWidget(covariant StoryPresenter oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isVisible != oldWidget.isVisible) {
+      if (widget.isVisible) {
+        _storyController.play();
+      } else {
+        _storyController.pause();
+      }
+    }
+  }
+
   void _disposeStoryController() {
     _storyController.removeListener(_storyControllerListener);
     if (widget.storyController == null) {
@@ -225,6 +244,7 @@ class _StoryPresenterState extends State<StoryPresenter>
   void _storyControllerListener() {
     /// Resumes the media playback.
     void resumeMedia() {
+      if (!widget.isVisible) return;
       _currentVideoPlayer?.play();
       _forwardAnimation(from: _animationController.value);
     }
@@ -339,9 +359,14 @@ class _StoryPresenterState extends State<StoryPresenter>
       onPageChanged: (index) {
         _hasStartedCountdown = false;
         _resetAnimation();
-        // Don't call pause/seekTo here — the old VideoStoryView
-        // will dispose its own controller. Calling seekTo on a
-        // disposed controller causes an async exception.
+        
+        // PAUSE and RESET previous player before losing reference
+        try {
+          _currentVideoPlayer?.pause();
+          _currentVideoPlayer?.seekTo(Duration.zero);
+        } catch (_) {
+          // Ignore errors if controller is already disposed
+        }
         _currentVideoPlayer = null;
 
         widget.onStoryChanged?.call(index);
@@ -405,7 +430,10 @@ class _StoryPresenterState extends State<StoryPresenter>
               if (isvisible) {
                 _currentVideoPlayer = videoPlayer;
                 if (_storyController.storyStatus != StoryAction.pause) {
-                  await videoPlayer!.play();
+                  await videoPlayer!.seekTo(Duration.zero).catchError((_) {});
+                  // Apply current mute state from controller immediately
+                  await videoPlayer.setVolume(_storyController.isMuted ? 0 : 1);
+                  await videoPlayer.play();
                   if (!_hasStartedCountdown) {
                     _startStoryCountdown(videoPlayer.value.duration, reset: true);
                     _hasStartedCountdown = true;

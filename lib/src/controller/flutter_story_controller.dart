@@ -8,10 +8,14 @@ class StoryController extends ChangeNotifier {
   StoryController({int initialIndex = 0}) : page = initialIndex;
 
   StoryAction _storyStatus = StoryAction.play;
+  bool _isMuted = false;
   int page = 0;
 
   /// The current action status of the story. Defaults to playing.
   StoryAction get storyStatus => _storyStatus;
+
+  /// Returns whether the story is currently muted.
+  bool get isMuted => _isMuted;
 
   /// Stream emitting the current playback progress (0.0 to 1.0)
   final StreamController<double> _playbackNotifier = StreamController<double>.broadcast();
@@ -53,11 +57,13 @@ class StoryController extends ChangeNotifier {
 
   /// Sets the story status to mute (mute audio) and notifies listeners of the change.
   void mute() {
+    _isMuted = true;
     _setStatus = StoryAction.mute;
   }
 
   /// Sets the story status to unMute (un-mute audio) and notifies listeners of the change.
   void unMute() {
+    _isMuted = false;
     _setStatus = StoryAction.unMute;
   }
 
