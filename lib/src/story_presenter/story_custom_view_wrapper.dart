@@ -22,7 +22,7 @@ class StoryCustomWidgetWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return VisibilityDetector(
-      key: UniqueKey(),
+      key: Key('visibility_${storyItem.url ?? key.toString()}'),
       onVisibilityChanged: (info) {
         if (info.visibleFraction == 0) {
           onVisibilityChanged?.call(false);

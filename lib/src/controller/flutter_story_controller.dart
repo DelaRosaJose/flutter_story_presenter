@@ -28,10 +28,22 @@ class StoryController extends ChangeNotifier {
     }
   }
 
-  /// Disposes the stream
+  /// Stream emitting total duration updates (for custom widgets to sync)
+  final StreamController<Duration> _durationUpdate = StreamController<Duration>.broadcast();
+  Stream<Duration> get durationUpdate => _durationUpdate.stream;
+
+  /// Updates the duration of the current story item (useful for dynamic media)
+  void updateDuration(Duration duration) {
+    if (!_durationUpdate.isClosed) {
+      _durationUpdate.sink.add(duration);
+    }
+  }
+
+  /// Disposes the streams
   @override
   void dispose() {
     _playbackNotifier.close();
+    _durationUpdate.close();
     super.dispose();
   }
 

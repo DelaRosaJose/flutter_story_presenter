@@ -180,6 +180,20 @@ class _StoryPresenterState extends State<StoryPresenter>
   void _initStoryController() {
     _storyController = widget.storyController ?? StoryController();
     _storyController.addListener(_storyControllerListener);
+
+    // Dynamic duration synchronization
+    _storyController.durationUpdate.listen((newDuration) {
+      if (mounted) {
+        debugPrint("[StoryPresenter] ⏱ Updating story duration to: $newDuration");
+        _durationNotifier.value = newDuration;
+        _animationController.duration = newDuration;
+        
+        // Re-calculate animation from current progress if already playing
+        if (_animationController.isAnimating) {
+          _animationController.forward(from: _animationController.value);
+        }
+      }
+    });
   }
 
   @override
@@ -493,7 +507,7 @@ class _StoryPresenterState extends State<StoryPresenter>
       case StoryItemType.custom:
         return StoryCustomWidgetWrapper(
           isAutoStart: true,
-          key: ValueKey('custom_$index'),
+          key: ValueKey('custom_${item.url ?? index}'),
           builder: () {
             return item.customWidget!(widget.storyController) ?? const SizedBox.shrink();
           },
