@@ -406,7 +406,7 @@ class _StoryPresenterState extends State<StoryPresenter>
     switch (item.storyItemType) {
       case StoryItemType.image:
         return ImageStoryView(
-          key: ValueKey('${item.hashCode}_${item.url}_$index'),
+          key: ValueKey('image_${item.url}_$index'),
           storyItem: item,
           onVisibilityChanged: (isVisible, isLoaded, isInitial) {
             if (isVisible && isLoaded && _storyController.storyStatus != StoryAction.pause) {
@@ -423,7 +423,7 @@ class _StoryPresenterState extends State<StoryPresenter>
       case StoryItemType.video:
         return VideoStoryView(
           storyItem: item,
-          key: ValueKey('${item.hashCode}_${item.url}_$index'),
+          key: ValueKey('video_${item.url}_$index'),
           looping: false,
           onVisibilityChanged: (videoPlayer, isvisible, isInitial) async {
             if (videoPlayer?.value.isInitialized == true) {
@@ -459,7 +459,7 @@ class _StoryPresenterState extends State<StoryPresenter>
       case StoryItemType.text:
         return TextStoryView(
           storyItem: item,
-          key: ValueKey('${item.hashCode}_${item.url}_$index'),
+          key: ValueKey('text_$index'),
           onVisibilityChanged: (isLoaded, isVisible, isInitial) {
             debugPrint('StoryPresenter[Text_$index]: isLoaded=$isLoaded, isVisible=$isVisible, status=${_storyController.storyStatus}, hasStarted=$_hasStartedCountdown');
             if (isLoaded && isVisible && _storyController.storyStatus != StoryAction.pause) {
@@ -493,7 +493,7 @@ class _StoryPresenterState extends State<StoryPresenter>
       case StoryItemType.custom:
         return StoryCustomWidgetWrapper(
           isAutoStart: true,
-          key: ValueKey('${item.hashCode}_${item.url}_$index'),
+          key: ValueKey('custom_$index'),
           builder: () {
             return item.customWidget!(widget.storyController) ?? const SizedBox.shrink();
           },
